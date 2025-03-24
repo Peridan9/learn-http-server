@@ -1,0 +1,20 @@
+package handlers
+
+import (
+	"net/http"
+)
+
+func (cfg *APIConfig) SetupRoutes() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.Handle("/app/", http.StripPrefix("/app", cfg.middlewareMetricsInc(http.FileServer(http.Dir(".")))))
+
+	mux.HandleFunc("GET /api/healthz", handlerReadiness)
+	mux.HandleFunc("GET /admin/metrics", cfg.handlerMetrics)
+
+	mux.HandleFunc("POST /admin/reset", cfg.handlerReset)
+	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
+	mux.HandleFunc("POST /api/users", cfg.handlerCreateUser)
+
+	return mux
+}

@@ -10,12 +10,14 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/peridan9/learn-http-server/internal/database"
+	"github.com/peridan9/learn-http-server/internal/handlers"
 )
 
-type apiConfig struct {
-	fileserverHits atomic.Int32
-	db             *database.Queries
-}
+// type apiConfig struct {
+// 	fileserverHits atomic.Int32
+// 	db             *database.Queries
+// 	platform       string
+// }
 
 func main() {
 	const filepathRoot = "."
@@ -33,20 +35,18 @@ func main() {
 	}
 
 	dbQueries := database.New(dbConn)
-
-	cfg := apiConfig{
-		fileserverHits: atomic.Int32{},
-		db:             dbQueries,
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM must be set")
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/app/", http.StripPrefix("/app", cfg.middlewareMetricsInc(http.FileServer(http.Dir(filepathRoot)))))
+	cfg := handlers.APIConfig{
+		FileserverHits: atomic.Int32{},
+		DB:             dbQueries,
+		Platform:       platform,
+	}
 
-	mux.HandleFunc("GET /api/healthz", handlerReadiness)
-	mux.HandleFunc("GET /admin/metrics", cfg.handlerMetrics)
-
-	mux.HandleFunc("POST /admin/reset", cfg.handlerReset)
-	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
+	mux := cfg.SetupRoutes()
 
 	srv := &http.Server{
 		Addr:    ":" + port,
