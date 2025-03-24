@@ -14,6 +14,10 @@ func (cfg *APIConfig) SetupRoutes() *http.ServeMux {
 
 	mux.HandleFunc("POST /admin/reset", cfg.handlerReset)
 	mux.HandleFunc("POST /api/users", cfg.handlerCreateUser)
+
+	// chirps
+	mux.HandleFunc("GET /api/chirps", cfg.handlerGetChirps)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", cfg.handlerGetChirpByID)
 	mux.HandleFunc("POST /api/chirps", cfg.handlerCreateChirp)
 
 	return mux
