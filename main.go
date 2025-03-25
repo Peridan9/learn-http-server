@@ -40,10 +40,16 @@ func main() {
 		log.Fatal("PLATFORM must be set")
 	}
 
+	secretKey := os.Getenv("SECRET_KEY")
+	if secretKey == "" {
+		log.Fatal("SECRET_KEY must be set")
+	}
+
 	cfg := handlers.APIConfig{
 		FileserverHits: atomic.Int32{},
 		DB:             dbQueries,
 		Platform:       platform,
+		SecretKey:      secretKey,
 	}
 
 	mux := cfg.SetupRoutes()

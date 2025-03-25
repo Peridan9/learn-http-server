@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/peridan9/learn-http-server/internal/auth"
 	"github.com/peridan9/learn-http-server/internal/database"
 )
 
@@ -66,20 +67,34 @@ func (cfg *APIConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 func (cfg *APIConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 
 	type Chirp struct {
-		Body   string `json:"body"`
-		UserID string `json:"user_id"`
+		Body string `json:"body"`
+	}
+
+	// TODO: implement a middleware to check if the user is authenticated
+	// check if the user is authenticated
+	userToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	// validate the token
+	UserID, err := auth.ValidateJWT(userToken, cfg.SecretKey)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	chirp := Chirp{}
-	err := decoder.Decode(&chirp)
+	err = decoder.Decode(&chirp)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not decode JSON", err)
 		return
 	}
 
 	// checking if user exists
-	_, err = cfg.DB.GetUserByID(r.Context(), uuid.MustParse(chirp.UserID))
+	_, err = cfg.DB.GetUserByID(r.Context(), UserID)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "User does not exist", err)
 		return
@@ -95,7 +110,7 @@ func (cfg *APIConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 	chirp.Body = cleanChirpFromBadWords(chirp.Body)
 
 	newChirp, err := cfg.DB.CreateChirp(r.Context(), database.CreateChirpParams{
-		UserID: uuid.MustParse(chirp.UserID),
+		UserID: UserID,
 		Body:   chirp.Body,
 	})
 	if err != nil {
