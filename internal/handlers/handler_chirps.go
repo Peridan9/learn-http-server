@@ -149,3 +149,44 @@ func cleanChirpFromBadWords(chirp string) string {
 
 	return strings.Join(words, " ") // Join words back into a sentence
 }
+
+func (cfg *APIConfig) handlerDeleteChirp(w http.ResponseWriter, r *http.Request) {
+	chirpIDString := r.PathValue("chirpID")
+	chirpID, err := uuid.Parse(chirpIDString)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid chirp ID", err)
+		return
+	}
+
+	userToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	UserID, err := auth.ValidateJWT(userToken, cfg.SecretKey)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	// check if the user is the owner of the chirp
+	chirp, err := cfg.DB.GetChirpByID(r.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Chirp not found", err)
+		return
+	}
+	if chirp.UserID != UserID {
+		respondWithError(w, http.StatusForbidden, "You are not the owner of this chirp", nil)
+		return
+	}
+
+	// delete the chirp
+	err = cfg.DB.DeleteChirpByID(r.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not delete chirp", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
