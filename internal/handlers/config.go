@@ -11,4 +11,5 @@ type APIConfig struct {
 	DB             *database.Queries
 	Platform       string
 	SecretKey      string
+	PolkaKey       string
 }

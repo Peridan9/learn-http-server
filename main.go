@@ -45,11 +45,17 @@ func main() {
 		log.Fatal("SECRET_KEY must be set")
 	}
 
+	polkaKey := os.Getenv("POLKA_KEY")
+	if polkaKey == "" {
+		log.Fatal("POLKA_KEY must be set")
+	}
+
 	cfg := handlers.APIConfig{
 		FileserverHits: atomic.Int32{},
 		DB:             dbQueries,
 		Platform:       platform,
 		SecretKey:      secretKey,
+		PolkaKey:       polkaKey,
 	}
 
 	mux := cfg.SetupRoutes()

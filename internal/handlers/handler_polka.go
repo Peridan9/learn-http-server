@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/peridan9/learn-http-server/internal/auth"
 )
 
 func (cfg *APIConfig) handlerUpgradeUser(w http.ResponseWriter, r *http.Request) {
@@ -17,9 +18,22 @@ func (cfg *APIConfig) handlerUpgradeUser(w http.ResponseWriter, r *http.Request)
 		Data  UserData `json:"data"`
 	}
 
+	//check the api key
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid API key", err)
+		return
+	}
+
+	//check the api key is valid
+	if apiKey != cfg.PolkaKey {
+		respondWithError(w, http.StatusUnauthorized, "Invalid API key", nil)
+		return
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	parameters := Parameters{}
-	err := decoder.Decode(&parameters)
+	err = decoder.Decode(&parameters)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not decode JSON", err)
 		return
