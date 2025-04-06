@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/peridan9/learn-http-server/internal/auth"
+	"github.com/peridan9/learn-http-server/internal/database"
 )
 
 func (cfg *APIConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type UserLogin struct {
-		Email            string `json:"email"`
-		Password         string `json:"password"`
-		ExpiersInSeconds int    `json:"expires_in_seconds"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	type response struct {
@@ -51,9 +51,25 @@ func (cfg *APIConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// creating the token
-	token, err := auth.MakeJWT(user.ID, cfg.SecretKey, clampTokenExpiry(parameters.ExpiersInSeconds))
+	token, err := auth.MakeJWT(user.ID, cfg.SecretKey, time.Hour)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not create token", err)
+		return
+	}
+
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not create refresh token", err)
+		return
+	}
+
+	_, err = cfg.DB.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		UserID:    user.ID,
+		Token:     refreshToken,
+		ExpiresAt: time.Now().UTC().Add(time.Hour * 24 * 60),
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not create refresh token", err)
 		return
 	}
 
@@ -64,14 +80,7 @@ func (cfg *APIConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
 	},
-		Token: token,
+		Token:        token,
+		RefreshToken: refreshToken,
 	})
-}
-
-// clampTokenExpiry ensures the token expiry is between 1 and 3600 seconds
-func clampTokenExpiry(seconds int) time.Duration {
-	if seconds <= 0 || seconds > 3600 {
-		seconds = 3600
-	}
-	return time.Duration(seconds) * time.Second
 }
