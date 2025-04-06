@@ -19,6 +19,7 @@ func (cfg *APIConfig) SetupRoutes() *http.ServeMux {
 
 	// users
 	mux.HandleFunc("POST /api/users", cfg.handlerCreateUser)
+	mux.HandleFunc("PUT /api/users", cfg.handlerUpdatePasswordAndEmail)
 
 	// login
 	mux.HandleFunc("POST /api/login", cfg.handlerLogin)
