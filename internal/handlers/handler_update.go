@@ -59,12 +59,7 @@ func (cfg *APIConfig) handlerUpdatePasswordAndEmail(w http.ResponseWriter, r *ht
 		return
 	}
 	respondWithJSON(w, http.StatusOK, response{
-		UserResponse: UserResponse{
-			ID:        user.ID,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			Email:     user.Email,
-		},
+		UserResponse: NewUserResponse(user),
 	})
 
 }

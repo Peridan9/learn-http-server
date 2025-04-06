@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/peridan9/learn-http-server/internal/database"
 )
 
 func respondWithError(w http.ResponseWriter, code int, msg string, err error) {
@@ -33,4 +35,14 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	}
 	w.WriteHeader(code)
 	w.Write(dat)
+}
+
+func NewUserResponse(user database.User) UserResponse {
+	return UserResponse{
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+		Email:       user.Email,
+		IsChirpyRed: user.IsChirpyRed,
+	}
 }

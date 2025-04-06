@@ -34,5 +34,7 @@ func (cfg *APIConfig) SetupRoutes() *http.ServeMux {
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", cfg.handlerDeleteChirp)
 	mux.HandleFunc("POST /api/chirps", cfg.handlerCreateChirp)
 
+	// polka
+	mux.HandleFunc("POST /api/polka/webhooks", cfg.handlerUpgradeUser)
 	return mux
 }
